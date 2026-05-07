@@ -22,9 +22,15 @@ share/python-wheels/
 *.egg
 PIPFILE.lock
 .pytest_cache/
+.tmp_exec/
+pytest-cache-files-*/
 .coverage
 htmlcov/
 .tox/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
 .env
 .env.local
 .vscode/
