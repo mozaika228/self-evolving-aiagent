@@ -137,6 +137,7 @@ class FullyEvolvedAgent:
                 "patterns_detected": len(patterns),
                 "new_tools_created": new_tools,
                 "structural_changes": evolution_report["total_efficiency_gain"],
+                "registry": evolution_report.get("registry", {}),
             },
             "improvement": improvement_result,
             "trajectory": improvement_trajectory,

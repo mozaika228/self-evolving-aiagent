@@ -69,6 +69,34 @@ async def get_critic_backlog(limit: int = 20):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/evolution/registry")
+async def get_evolution_registry():
+    try:
+        report = await agent.structural_evolution.get_registry_report()
+        return {"status": "success", **report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class ToolOutcomeRequest(BaseModel):
+    tool_name: str
+    success: bool
+    score: float
+
+
+@app.post("/api/evolution/tool-outcome")
+async def update_tool_outcome(request: ToolOutcomeRequest):
+    try:
+        result = await agent.structural_evolution.update_tool_outcome(
+            tool_name=request.tool_name,
+            success=request.success,
+            score=request.score,
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
