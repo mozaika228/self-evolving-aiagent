@@ -150,3 +150,6 @@ class FullyEvolvedAgent:
             "strategy": await self.strategy.get_strategic_status(),
             "execution_history_size": len(self.execution_history),
         }
+
+    async def run_nightly_memory_maintenance(self) -> Dict[str, Any]:
+        return await self.memory.nightly_maintenance()

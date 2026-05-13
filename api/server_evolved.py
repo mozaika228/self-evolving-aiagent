@@ -51,6 +51,15 @@ async def get_full_status():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/api/memory/nightly")
+async def run_nightly_memory():
+    try:
+        result = await agent.run_nightly_memory_maintenance()
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
