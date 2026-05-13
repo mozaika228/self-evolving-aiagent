@@ -156,6 +156,10 @@ class RecoverRequest(BaseModel):
     from_event_index: int | None = None
 
 
+class EvalRunRequest(BaseModel):
+    candidate_name: str = "current_agent"
+
+
 @app.post("/api/environment/session/start")
 async def start_environment_session(request: EnvironmentSessionRequest):
     try:
@@ -221,6 +225,24 @@ async def recover_environment_session(request: RecoverRequest):
             session_id=request.session_id,
             from_event_index=request.from_event_index,
         )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/evaluation/run")
+async def run_evaluation_lab(request: EvalRunRequest):
+    try:
+        report = await agent.run_evaluation_lab(candidate_name=request.candidate_name)
+        return {"status": "success", **report}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/evaluation/reference")
+async def save_evaluation_reference(request: EvalRunRequest):
+    try:
+        result = await agent.save_evaluation_reference(candidate_name=request.candidate_name)
         return {"status": "success", **result}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

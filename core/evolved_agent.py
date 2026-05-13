@@ -8,6 +8,7 @@ from core.critic.layer import CriticLayer
 from core.structural_evolution.system import StructuralEvolution
 from core.environment.interaction import EnvironmentInteraction
 from core.strategy.long_term import LongTermStrategy
+from core.evaluation.lab import EvaluationLab, build_eval_results_from_execution_history
 
 
 class FullyEvolvedAgent:
@@ -22,6 +23,7 @@ class FullyEvolvedAgent:
         self.structural_evolution = StructuralEvolution()
         self.environment = EnvironmentInteraction()
         self.strategy = LongTermStrategy()
+        self.evaluation_lab = EvaluationLab()
         
         self.execution_history = []
         self.improvement_mode = False
@@ -167,3 +169,17 @@ class FullyEvolvedAgent:
 
     async def run_nightly_memory_maintenance(self) -> Dict[str, Any]:
         return await self.memory.nightly_maintenance()
+
+    async def run_evaluation_lab(self, candidate_name: str = "current_agent") -> Dict[str, Any]:
+        eval_results = build_eval_results_from_execution_history(self.execution_history)
+        candidate_kpi = self.evaluation_lab.evaluate_candidate(eval_results)
+        reference_kpi = self.evaluation_lab.load_reference()
+        gate = self.evaluation_lab.regression_gate(candidate_kpi, reference_kpi)
+        ab = self.evaluation_lab.run_ab(candidate_kpi)
+        report = self.evaluation_lab.build_report(candidate_name, candidate_kpi, gate, ab)
+        return report
+
+    async def save_evaluation_reference(self, candidate_name: str = "current_agent") -> Dict[str, Any]:
+        report = await self.run_evaluation_lab(candidate_name=candidate_name)
+        path = self.evaluation_lab.save_reference(report["kpi"])
+        return {"saved": True, "path": path, "kpi": report["kpi"]}

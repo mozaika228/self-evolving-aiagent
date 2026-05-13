@@ -1,0 +1,12 @@
+{
+  "timestamp": "2026-05-13T00:00:00",
+  "kpi": {
+    "success_rate": 0.70,
+    "latency": 4.2,
+    "cost": 0.60,
+    "novelty": 0.40,
+    "retention": 0.55,
+    "adaptation_speed": 0.45,
+    "quality": 0.70
+  }
+}

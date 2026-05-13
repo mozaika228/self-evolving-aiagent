@@ -30,3 +30,6 @@ jobs:
 
       - name: Run tests
         run: pytest tests/test_agent.py
+
+      - name: Run evaluation regression gate
+        run: python tools/run_regression_gate.py
