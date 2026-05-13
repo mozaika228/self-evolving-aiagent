@@ -75,6 +75,7 @@ class FullyEvolvedAgent:
             "success": review.success,
             "confidence": review.confidence,
             "improvements": review.improvements,
+            "counterfactual": review.counterfactual,
         })
         
         # 6. Обнаружение повторяющихся паттернов
@@ -102,6 +103,15 @@ class FullyEvolvedAgent:
         strategy_status = await self.strategy.get_strategic_status()
         
         execution_time = (datetime.now() - start_time).total_seconds()
+
+        estimated_tokens = max(200, len(result.code) // 3)
+        await self.strategy.update_kpi(
+            success=review.success,
+            quality_score=review.score,
+            latency_sec=execution_time,
+            tokens_spent=estimated_tokens,
+        )
+        await self.strategy.build_iteration_plan(n_iterations=5)
         
         # Записать в историю
         self.execution_history.append({

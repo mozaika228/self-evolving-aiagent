@@ -97,6 +97,36 @@ async def update_tool_outcome(request: ToolOutcomeRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class StrategyPlanRequest(BaseModel):
+    iterations: int = 5
+
+
+class StrategyBudgetRequest(BaseModel):
+    token_budget: int
+    time_budget_sec: float
+
+
+@app.post("/api/strategy/plan")
+async def build_strategy_plan(request: StrategyPlanRequest):
+    try:
+        plan = await agent.strategy.build_iteration_plan(n_iterations=request.iterations)
+        return {"status": "success", "iterations": request.iterations, "plan": plan}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/strategy/budget")
+async def set_strategy_budget(request: StrategyBudgetRequest):
+    try:
+        result = await agent.strategy.set_budget(
+            token_budget=request.token_budget,
+            time_budget_sec=request.time_budget_sec,
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
