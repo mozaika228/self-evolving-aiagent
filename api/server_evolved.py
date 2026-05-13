@@ -127,6 +127,105 @@ async def set_strategy_budget(request: StrategyBudgetRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class EnvironmentSessionRequest(BaseModel):
+    deterministic_seed: int | None = None
+    safe_mode: bool = False
+
+
+class PolicyUpdateRequest(BaseModel):
+    capability: str
+    allowed: bool
+    allowed_paths: list[str] | None = None
+    denied_paths: list[str] | None = None
+    allowed_commands: list[str] | None = None
+    max_timeout_sec: int | None = None
+
+
+class SecretRequest(BaseModel):
+    key: str
+    value: str
+
+
+class ReplayRequest(BaseModel):
+    session_id: str
+    deterministic: bool = True
+
+
+class RecoverRequest(BaseModel):
+    session_id: str
+    from_event_index: int | None = None
+
+
+@app.post("/api/environment/session/start")
+async def start_environment_session(request: EnvironmentSessionRequest):
+    try:
+        result = await agent.environment.start_session(
+            deterministic_seed=request.deterministic_seed,
+            safe_mode=request.safe_mode,
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/environment/session/end")
+async def end_environment_session(session_id: str | None = None):
+    try:
+        result = await agent.environment.end_session(session_id=session_id)
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/environment/policy")
+async def update_environment_policy(request: PolicyUpdateRequest):
+    try:
+        result = await agent.environment.configure_policy(
+            capability=request.capability,
+            allowed=request.allowed,
+            allowed_paths=request.allowed_paths,
+            denied_paths=request.denied_paths,
+            allowed_commands=request.allowed_commands,
+            max_timeout_sec=request.max_timeout_sec,
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/environment/secret")
+async def set_environment_secret(request: SecretRequest):
+    try:
+        result = await agent.environment.isolate_secret(key=request.key, value=request.value)
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/environment/replay")
+async def replay_environment_session(request: ReplayRequest):
+    try:
+        result = await agent.environment.replay_session(
+            session_id=request.session_id,
+            deterministic=request.deterministic,
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/environment/recover")
+async def recover_environment_session(request: RecoverRequest):
+    try:
+        result = await agent.environment.recover_session(
+            session_id=request.session_id,
+            from_event_index=request.from_event_index,
+        )
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
