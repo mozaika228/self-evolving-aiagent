@@ -60,6 +60,15 @@ async def run_nightly_memory():
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/api/critic/backlog")
+async def get_critic_backlog(limit: int = 20):
+    try:
+        backlog = await agent.critic.get_improvement_backlog(limit=limit)
+        return {"status": "success", "count": len(backlog), "items": backlog}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

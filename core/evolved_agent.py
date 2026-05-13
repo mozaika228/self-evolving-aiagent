@@ -128,6 +128,9 @@ class FullyEvolvedAgent:
                 "reusable_as_skill": review.reusable_as_skill,
                 "confidence": review.confidence,
                 "reasoning": review.reasoning,
+                "judges": review.judges,
+                "counterfactual": review.counterfactual,
+                "backlog": review.backlog,
             },
             "memory": memory_stats,
             "evolution": {
