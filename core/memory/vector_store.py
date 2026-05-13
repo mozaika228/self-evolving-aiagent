@@ -28,7 +28,11 @@ class VectorStore:
             return
         try:
             self.client.get_collection(self.collection_name)
-        except:
+            return
+        except Exception:
+            pass
+
+        try:
             self.client.create_collection(
                 collection_name=self.collection_name,
                 vectors_config=VectorParams(
@@ -36,6 +40,10 @@ class VectorStore:
                     distance=Distance.COSINE,
                 ),
             )
+        except Exception:
+            # Qdrant library may be installed while the server is unavailable
+            # (typical CI case). Switch to in-memory fallback mode.
+            self.client = None
 
     async def add_solution(
         self,
