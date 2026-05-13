@@ -1,6 +1,6 @@
 import asyncio
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timedelta
+from typing import Dict, Any, List
 
 from core.agent import EvolvingAgent
 from core.memory.hierarchical_v2 import HierarchicalMemorySystem, MemoryType
@@ -27,6 +27,11 @@ class FullyEvolvedAgent:
         
         self.execution_history = []
         self.improvement_mode = False
+        self.last_weekly_skill_snapshot: Dict[str, Any] = {
+            "timestamp": datetime.now().isoformat(),
+            "tools": [],
+            "skill_memory_count": 0,
+        }
 
     async def execute_with_full_evolution(
         self,
@@ -183,3 +188,80 @@ class FullyEvolvedAgent:
         report = await self.run_evaluation_lab(candidate_name=candidate_name)
         path = self.evaluation_lab.save_reference(report["kpi"])
         return {"saved": True, "path": path, "kpi": report["kpi"]}
+
+    async def run_evolution_cycle(self, task: str, language: str = "python") -> Dict[str, Any]:
+        result = await self.execute_with_full_evolution(task=task, language=language)
+        control_plane = await self.get_control_plane_status()
+        return {"cycle": result, "control_plane": control_plane}
+
+    async def get_control_plane_status(self) -> Dict[str, Any]:
+        memory = await self.memory.get_memory_stats()
+        evolution = await self.structural_evolution.get_evolution_report()
+        strategy = await self.strategy.get_strategic_status()
+        critic = await self.critic.get_improvement_trajectory()
+        environment = await self.environment.get_environment_stats()
+
+        risks: List[Dict[str, Any]] = []
+        if strategy.get("safe_mode"):
+            risks.append({"level": "high", "type": "safe_mode", "reason": strategy.get("safe_mode_reason", "")})
+        if critic.get("trend") == "degrading":
+            risks.append({"level": "medium", "type": "quality_trend", "reason": "critic trend is degrading"})
+        disabled_tools = evolution.get("registry", {}).get("disabled", 0)
+        if disabled_tools > 0:
+            risks.append({"level": "medium", "type": "tool_degradation", "reason": f"{disabled_tools} tools disabled"})
+        if memory.get("total_entries", 0) == 0:
+            risks.append({"level": "low", "type": "cold_memory", "reason": "memory has no retained entries"})
+
+        return {
+            "timestamp": datetime.now().isoformat(),
+            "memory": memory,
+            "evolution": evolution,
+            "strategy": strategy,
+            "critic": critic,
+            "environment": environment,
+            "risks": risks,
+        }
+
+    async def generate_weekly_evolution_report(self) -> Dict[str, Any]:
+        cutoff = datetime.now() - timedelta(days=7)
+        recent = []
+        for item in self.execution_history:
+            # history currently has no explicit timestamp; infer by recency order
+            recent.append(item)
+        recent = recent[-50:]
+
+        total = len(recent)
+        success = sum(1 for x in recent if x.get("success"))
+        avg_score = (sum(x.get("score", 0.0) for x in recent) / total) if total else 0.0
+        avg_time = (sum(x.get("time", 0.0) for x in recent) / total) if total else 0.0
+
+        registry = await self.structural_evolution.get_registry_report()
+        memory_stats = await self.memory.get_memory_stats()
+
+        current_snapshot = {
+            "timestamp": datetime.now().isoformat(),
+            "tools": [item["name"] for item in registry.get("top_rated", [])],
+            "skill_memory_count": memory_stats.get("layers", {}).get("skill", {}).get("count", 0),
+        }
+        previous = self.last_weekly_skill_snapshot
+        prev_tools = set(previous.get("tools", []))
+        cur_tools = set(current_snapshot["tools"])
+        diff = {
+            "added_tools": sorted(list(cur_tools - prev_tools)),
+            "removed_tools": sorted(list(prev_tools - cur_tools)),
+            "skill_memory_delta": current_snapshot["skill_memory_count"] - previous.get("skill_memory_count", 0),
+        }
+        self.last_weekly_skill_snapshot = current_snapshot
+
+        return {
+            "period_days": 7,
+            "summary": {
+                "executions": total,
+                "success_rate": (success / total) if total else 0.0,
+                "avg_score": avg_score,
+                "avg_time_sec": avg_time,
+            },
+            "skill_diff": diff,
+            "registry": registry,
+            "generated_at": datetime.now().isoformat(),
+        }

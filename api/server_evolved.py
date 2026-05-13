@@ -160,6 +160,11 @@ class EvalRunRequest(BaseModel):
     candidate_name: str = "current_agent"
 
 
+class EvolutionCycleRequest(BaseModel):
+    task: str
+    language: str = "python"
+
+
 @app.post("/api/environment/session/start")
 async def start_environment_session(request: EnvironmentSessionRequest):
     try:
@@ -244,6 +249,33 @@ async def save_evaluation_reference(request: EvalRunRequest):
     try:
         result = await agent.save_evaluation_reference(candidate_name=request.candidate_name)
         return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/control-plane/status")
+async def get_control_plane_status():
+    try:
+        result = await agent.get_control_plane_status()
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/evolution/run-cycle")
+async def run_evolution_cycle(request: EvolutionCycleRequest):
+    try:
+        result = await agent.run_evolution_cycle(task=request.task, language=request.language)
+        return {"status": "success", **result}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/reports/weekly-evolution")
+async def get_weekly_evolution_report():
+    try:
+        report = await agent.generate_weekly_evolution_report()
+        return {"status": "success", **report}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
